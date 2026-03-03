@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta CNPJ - Receita WS</title>
+    <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Consulta CNPJ</h1>
+        <p class="subtitle">Insira apenas os números do CNPJ</p>
+        
+        <div class="search-box">
+            <input type="text" id="cnpj" placeholder="Ex: 06990590000123" maxlength="14">
+            <button onclick="buscarCNPJ()">Consultar Empresa</button>
+        </div>
+
+        <div id="resultado">
+            <!-- Os dados aparecerão aqui -->
+        </div>
+    </div>
+
+    <script>
+        async function buscarCNPJ() {
+            const cnpjInput = document.getElementById('cnpj').value.replace(/\D/g, ''); // Remove pontos/barras
+            const resultadoDiv = document.getElementById('resultado');
+
+            if (cnpjInput.length !== 14) {
+                resultadoDiv.innerHTML = '<p class="error-message">O CNPJ deve ter 14 números.</p>';
+                return;
+            }
+
+            resultadoDiv.innerHTML = '<p>Consultando...</p>';
+
+            // A API gratuita da Receita WS requer JSONP para funcionar direto no navegador (CORS)
+            // Para fins didáticos, usaremos o formato de Script Tag para evitar erro de CORS
+            const script = document.createElement('script');
+            script.src = `https://receitaws.com.br/v1/cnpj/${cnpjInput}?callback=callbackCNPJ`;
+            document.body.appendChild(script);
+        }
+
+        // Função que processa o retorno da API
+        function callbackCNPJ(data) {
+            const resultadoDiv = document.getElementById('resultado');
+            
+            if (data.status === "ERROR") {
+                resultadoDiv.innerHTML = `<p class="error-message">Erro: ${data.message}</p>`;
+            } else {
+                resultadoDiv.innerHTML = `
+                    <div class="result-card">
+                        <div class="result-item"><strong>Razão Social:</strong> ${data.nome}</div>
+                        <div class="result-item"><strong>Nome Fantasia:</strong> ${data.fantasia || 'Não informado'}</div>
+                        <div class="result-item"><strong>Situação:</strong> ${data.situacao}</div>
+                        <div class="result-item"><strong>Atividade Principal:</strong> ${data.atividade_principal[0].text}</div>
+                        <div class="result-item"><strong>Telefone:</strong> ${data.telefone}</div>
+                        <div class="result-item"><strong>Capital Social:</strong> R$ ${data.capital_social}</div>
+                    </div>
+                `;
+            }
+            // Remove o script temporário
+            const scripts = document.querySelectorAll('script[src*="receitaws"]');
+            scripts.forEach(s => s.remove());
+        }
+    </script>
+</body>
+</html>
